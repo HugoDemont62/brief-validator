@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import { JsonResponse } from '../types';
+import Chart from 'chart.js/auto';
 
 interface PdfExportButtonProps {
   result: JsonResponse;
@@ -9,22 +10,217 @@ interface PdfExportButtonProps {
 
 const PdfExportButton: React.FC<PdfExportButtonProps> = ({ result, fileName = 'brief-analysis' }) => {
   const [isExporting, setIsExporting] = useState(false);
+  const chartRef = useRef<HTMLCanvasElement>(null);
+
+  // Fonction utilitaire pour normaliser les scores
+  const normalizeScore = (score: number): number => {
+    // Si le score est déjà entre 0 et 10, on le garde tel quel
+    if (score >= 0 && score <= 10) return score;
+    // Si le score est entre 0 et 100, on le divise par 10
+    if (score > 10 && score <= 100) return score / 10;
+    // Si le score est supérieur à 100, on le divise par 100
+    return score / 100;
+  };
+
+  const generateScoresChart = async (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 200;
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+
+        if (ctx) {
+          const coherenceScore = normalizeScore(result.analysis.coherence_score);
+          const completenessScore = normalizeScore(result.analysis.completeness_score);
+
+          const chart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+              labels: ['Cohérence', 'Complétude'],
+              datasets: [{
+                label: 'Scores',
+                data: [
+                  coherenceScore,
+                  completenessScore
+                ],
+                backgroundColor: 'rgba(41, 128, 185, 0.2)',
+                borderColor: 'rgba(41, 128, 185, 1)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(41, 128, 185, 1)'
+              }]
+            },
+            options: {
+              plugins: {
+                title: {
+                  display: true,
+                  text: 'Évaluation globale du brief',
+                  font: {
+                    size: 16
+                  }
+                },
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                r: {
+                  beginAtZero: true,
+                  max: 10,
+                  ticks: {
+                    stepSize: 2
+                  }
+                }
+              }
+            }
+          });
+
+          setTimeout(() => {
+            const imageData = canvas.toDataURL('image/png');
+            document.body.removeChild(canvas);
+            chart.destroy();
+            resolve(imageData);
+          }, 100);
+        } else {
+          reject(new Error('Impossible de créer le contexte 2D'));
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
+  const generatePhasesChart = async (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 600;
+        canvas.height = 300;
+        document.body.appendChild(canvas); // Ajouter temporairement au DOM
+        const ctx = canvas.getContext('2d');
+
+        if (ctx) {
+          const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: result.project_structure.phases.map(phase => phase.name),
+              datasets: [{
+                label: 'Heures estimées par phase',
+                data: result.project_structure.phases.map(phase => 
+                  phase.tasks.reduce((acc, task) => acc + task.estimated_hours, 0)
+                ),
+                backgroundColor: 'rgba(46, 204, 113, 0.6)',
+                borderColor: 'rgba(46, 204, 113, 1)',
+                borderWidth: 1
+              }]
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Heures'
+                  }
+                }
+              }
+            }
+          });
+
+          // Attendre que le graphique soit rendu
+          setTimeout(() => {
+            const imageData = canvas.toDataURL('image/png');
+            document.body.removeChild(canvas); // Nettoyer
+            chart.destroy(); // Nettoyer le graphique
+            resolve(imageData);
+          }, 100);
+        } else {
+          reject(new Error('Impossible de créer le contexte 2D'));
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
 
   const exportToPdf = async () => {
     setIsExporting(true);
 
     try {
-      // Créer un nouveau document PDF
+      const scoresChartImage = await generateScoresChart();
+      const phasesChartImage = await generatePhasesChart();
+      
+      // Créer un nouveau document PDF avec support des caractères spéciaux
       const pdf = new jsPDF('p', 'mm', 'a4');
+      // Utiliser la police par défaut qui supporte mieux les caractères spéciaux
+      pdf.setFont("helvetica");
       const width = pdf.internal.pageSize.getWidth();
+      const height = pdf.internal.pageSize.getHeight();
 
-      // Ajouter le titre
-      pdf.setFontSize(20);
+      // Fonction utilitaire pour nettoyer le texte des caractères spéciaux
+      const cleanText = (text: string): string => {
+        return text
+          .replace(/Ø=ßà/g, '•') // Remplacer les caractères problématiques par des puces
+          .replace(/[^\x00-\x7F]/g, (char) => {
+            // Remplacer les caractères non-ASCII par leurs équivalents
+            const specialChars: { [key: string]: string } = {
+              'é': 'e',
+              'è': 'e',
+              'à': 'a',
+              'ù': 'u',
+              'â': 'a',
+              'ê': 'e',
+              'î': 'i',
+              'ô': 'o',
+              'û': 'u',
+              'ë': 'e',
+              'ï': 'i',
+              'ü': 'u',
+              'ç': 'c'
+            };
+            return specialChars[char] || char;
+          });
+      };
+
+      // Fonction utilitaire pour gérer le texte long
+      const addWrappedText = (text: string, x: number, y: number, maxWidth: number, fontSize: number) => {
+        pdf.setFontSize(fontSize);
+        const lines = pdf.splitTextToSize(cleanText(text), maxWidth);
+        let totalHeight = 0;
+        
+        // Vérifier si on a besoin d'une nouvelle page
+        if (y + (lines.length * (fontSize * 0.5)) > 270) {
+          pdf.addPage();
+          addPageHeader(pdf.getCurrentPageInfo().pageNumber > 2 ? 'Structure du projet' : 'Analyse détaillée');
+          y = 30;
+        }
+
+        lines.forEach((line: string, index: number) => {
+          pdf.text(line, x, y + (index * (fontSize * 0.5)));
+          totalHeight = index * (fontSize * 0.5);
+        });
+        return totalHeight; // Retourne la hauteur totale utilisée
+      };
+
+      // Style de page
+      const addPageHeader = (title: string, yPosition = 10) => {
+        pdf.setFillColor(41, 128, 185);
+        pdf.rect(0, 0, width, 15, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(12);
+        pdf.text(title, width / 2, yPosition, { align: 'center' });
+      };
+
+      // Première page - Page de garde
+      addPageHeader('Analyse de Brief Client');
+      
+      pdf.setFontSize(24);
       pdf.setTextColor(44, 62, 80);
-      pdf.text('Analyse de Brief Client', width / 2, 20, { align: 'center' });
+      pdf.text('Analyse de Brief Client', width / 2, height / 3, { align: 'center' });
 
       // Ajouter la date
-      pdf.setFontSize(10);
+      pdf.setFontSize(12);
       pdf.setTextColor(100, 100, 100);
       const date = new Date().toLocaleDateString('fr-FR', {
         day: '2-digit',
@@ -33,231 +229,292 @@ const PdfExportButton: React.FC<PdfExportButtonProps> = ({ result, fileName = 'b
         hour: '2-digit',
         minute: '2-digit'
       });
-      pdf.text(`Généré le ${date}`, width / 2, 27, { align: 'center' });
+      pdf.text(`Généré le ${date}`, width / 2, height / 3 + 10, { align: 'center' });
 
-      let yPos = 35;
+      // Page des scores et métriques
+      pdf.addPage();
+      addPageHeader('Scores et Métriques');
+      let yPos = 30;
 
-      // Section Analyse
-      pdf.setFontSize(16);
-      pdf.setTextColor(41, 128, 185);
-      pdf.text('Analyse du brief', 10, yPos);
-      yPos += 10;
-
-      // Scores
-      pdf.setFontSize(12);
+      // Ajouter les statistiques clés
+      pdf.setFontSize(14);
       pdf.setTextColor(44, 62, 80);
-      pdf.text(`Score de cohérence: ${(result.analysis.coherence_score * 10).toFixed(1)}/10`, 15, yPos);
-      yPos += 7;
-      pdf.text(`Score de complétude: ${(result.analysis.completeness_score * 10).toFixed(1)}/10`, 15, yPos);
+      pdf.text('Statistiques clés:', 20, yPos);
       yPos += 10;
+
+      const stats = [
+        `Durée totale estimée: ${result.project_structure.estimated_total_hours}h`,
+        `Taille d'équipe recommandée: ${result.project_structure.recommended_team_size} personnes`,
+        `Nombre de phases: ${result.project_structure.phases.length}`,
+        `Points forts identifiés: ${result.analysis.strengths.length}`,
+        `Points d'attention: ${result.analysis.weaknesses.length}`
+      ];
+
+      stats.forEach(stat => {
+        pdf.setFontSize(12);
+        pdf.text(`• ${stat}`, 25, yPos);
+        yPos += 8;
+      });
+
+      yPos += 10;
+
+      // Scores textuels avec normalisation
+      pdf.setFontSize(14);
+      pdf.setTextColor(44, 62, 80);
+      pdf.text('Scores d\'analyse:', 20, yPos);
+      yPos += 8;
+
+      const coherenceScore = normalizeScore(result.analysis.coherence_score);
+      const completenessScore = normalizeScore(result.analysis.completeness_score);
+
+      pdf.setFontSize(12);
+      pdf.text(`Score de coherence: ${coherenceScore.toFixed(1)}/10`, 25, yPos);
+      yPos += 7;
+      pdf.text(`Score de completude: ${completenessScore.toFixed(1)}/10`, 25, yPos);
+      yPos += 15;
+
+      // Graphique des scores radar
+      const chartWidth = 120;
+      const chartHeight = 60;
+      pdf.addImage(scoresChartImage, 'PNG', (width - chartWidth) / 2, yPos, chartWidth, chartHeight);
+      yPos += chartHeight + 20;
+
+      // Graphique des phases
+      pdf.setFontSize(14);
+      pdf.text('Répartition des heures par phase:', 20, yPos);
+      yPos += 10;
+      
+      const phasesChartWidth = 160;
+      const phasesChartHeight = 80;
+      pdf.addImage(phasesChartImage, 'PNG', (width - phasesChartWidth) / 2, yPos, phasesChartWidth, phasesChartHeight);
+      yPos = phasesChartHeight + yPos + 20;
+
+      // Nouvelle page pour l'analyse
+      pdf.addPage();
+      addPageHeader('Analyse détaillée');
+      yPos = 30;
 
       // Forces
-      pdf.setFontSize(14);
+      pdf.setFontSize(16);
       pdf.setTextColor(46, 204, 113);
-      pdf.text('Forces:', 10, yPos);
-      yPos += 7;
+      pdf.text('Forces:', 20, yPos);
+      yPos += 10;
 
       pdf.setFontSize(11);
       pdf.setTextColor(44, 62, 80);
 
       result.analysis.strengths.forEach(strength => {
-        // Vérifier si on a besoin d'une nouvelle page
-        if (yPos > 270) {
+        if (yPos > 250) {
           pdf.addPage();
-          yPos = 20;
+          addPageHeader('Analyse détaillée');
+          yPos = 30;
         }
-        pdf.text(`• ${strength}`, 15, yPos);
+        pdf.text(`• ${strength}`, 25, yPos);
         yPos += 7;
       });
 
-      yPos += 3;
+      yPos += 10;
 
       // Faiblesses
-      pdf.setFontSize(14);
+      pdf.setFontSize(16);
       pdf.setTextColor(231, 76, 60);
-      pdf.text('Faiblesses:', 10, yPos);
-      yPos += 7;
+      pdf.text('Faiblesses:', 20, yPos);
+      yPos += 10;
 
       pdf.setFontSize(11);
       pdf.setTextColor(44, 62, 80);
 
       result.analysis.weaknesses.forEach(weakness => {
-        if (yPos > 270) {
+        if (yPos > 250) {
           pdf.addPage();
-          yPos = 20;
+          addPageHeader('Analyse détaillée');
+          yPos = 30;
         }
-        pdf.text(`• ${weakness}`, 15, yPos);
+        pdf.text(`• ${weakness}`, 25, yPos);
         yPos += 7;
       });
 
-      yPos += 3;
+      yPos += 10;
 
       // Informations manquantes
-      pdf.setFontSize(14);
+      pdf.setFontSize(16);
       pdf.setTextColor(243, 156, 18);
-      pdf.text('Informations manquantes:', 10, yPos);
-      yPos += 7;
+      pdf.text('Informations manquantes:', 20, yPos);
+      yPos += 10;
 
       pdf.setFontSize(11);
       pdf.setTextColor(44, 62, 80);
 
       result.analysis.missing_information.forEach(info => {
-        if (yPos > 270) {
+        if (yPos > 250) {
           pdf.addPage();
-          yPos = 20;
+          addPageHeader('Analyse détaillée');
+          yPos = 30;
         }
-        pdf.text(`• ${info}`, 15, yPos);
+        pdf.text(`• ${info}`, 25, yPos);
         yPos += 7;
       });
 
-      // Nouvelle page pour les questions
+      // Questions de clarification
       pdf.addPage();
-      yPos = 20;
-
-      // Section Questions
-      pdf.setFontSize(16);
-      pdf.setTextColor(41, 128, 185);
-      pdf.text('Questions de clarification', 10, yPos);
-      yPos += 10;
-
-      pdf.setFontSize(11);
+      addPageHeader('Questions de clarification');
+      yPos = 30;
 
       result.clarification_questions.forEach((question, index) => {
         if (yPos > 250) {
           pdf.addPage();
-          yPos = 20;
+          addPageHeader('Questions de clarification');
+          yPos = 30;
         }
 
         // Priorité (avec couleur)
         let priorityColor: [number, number, number];
         switch (question.importance) {
           case 'high':
-            priorityColor = [231, 76, 60]; // rouge
+            priorityColor = [231, 76, 60];
             break;
           case 'medium':
-            priorityColor = [243, 156, 18]; // orange
+            priorityColor = [243, 156, 18];
             break;
           default:
-            priorityColor = [46, 204, 113]; // vert
+            priorityColor = [46, 204, 113];
         }
 
         pdf.setFontSize(12);
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`${index + 1}. ${question.question}`, 15, yPos);
-        yPos += 5;
+        pdf.text(`${index + 1}. ${question.question}`, 20, yPos);
+        yPos += 7;
 
         pdf.setFontSize(10);
         pdf.setTextColor(...priorityColor);
-        pdf.text(`Importance: ${question.importance} | Catégorie: ${question.category}`, 20, yPos);
-        yPos += 5;
+        pdf.text(`Importance: ${question.importance} | Catégorie: ${question.category}`, 25, yPos);
+        yPos += 7;
 
         pdf.setTextColor(100, 100, 100);
-
-        // Gérer le texte long avec des sauts de ligne automatiques
-        const maxWidth = width - 40; // marges des deux côtés
+        const maxWidth = width - 50;
         const splitText = pdf.splitTextToSize(question.reason, maxWidth);
 
         splitText.forEach((line: string) => {
-          if (yPos > 270) {
+          if (yPos > 250) {
             pdf.addPage();
-            yPos = 20;
+            addPageHeader('Questions de clarification');
+            yPos = 30;
           }
-          pdf.text(line, 20, yPos);
+          pdf.text(line, 25, yPos);
           yPos += 5;
-        });
-
-        yPos += 5;
-      });
-
-      // Ajouter une page pour la structure du projet
-      pdf.addPage();
-      yPos = 20;
-
-      // Section Structure du projet
-      pdf.setFontSize(16);
-      pdf.setTextColor(41, 128, 185);
-      pdf.text('Structure du projet', 10, yPos);
-      yPos += 10;
-
-      pdf.setFontSize(12);
-      pdf.setTextColor(44, 62, 80);
-      pdf.text(`Heures estimées: ${result.project_structure.estimated_total_hours}h`, 15, yPos);
-      yPos += 7;
-      pdf.text(`Équipe recommandée: ${result.project_structure.recommended_team_size} personnes`, 15, yPos);
-      yPos += 10;
-
-      // Phases du projet
-      result.project_structure.phases.forEach((phase, phaseIndex) => {
-        if (yPos > 250) {
-          pdf.addPage();
-          yPos = 20;
-        }
-
-        pdf.setFontSize(14);
-        pdf.setTextColor(41, 128, 185);
-        pdf.text(`Phase ${phaseIndex + 1}: ${phase.name}`, 10, yPos);
-        yPos += 7;
-
-        // Objectifs
-        pdf.setFontSize(12);
-        pdf.setTextColor(44, 62, 80);
-        pdf.text('Objectifs:', 15, yPos);
-        yPos += 7;
-
-        pdf.setFontSize(11);
-        phase.objectives.forEach(obj => {
-          if (yPos > 270) {
-            pdf.addPage();
-            yPos = 20;
-          }
-          pdf.text(`• ${obj}`, 20, yPos);
-          yPos += 6;
-        });
-
-        yPos += 3;
-
-        // Livrables
-        pdf.setFontSize(12);
-        pdf.setTextColor(44, 62, 80);
-        pdf.text('Livrables:', 15, yPos);
-        yPos += 7;
-
-        pdf.setFontSize(11);
-        phase.deliverables.forEach(deliv => {
-          if (yPos > 270) {
-            pdf.addPage();
-            yPos = 20;
-          }
-          pdf.text(`• ${deliv}`, 20, yPos);
-          yPos += 6;
-        });
-
-        yPos += 3;
-
-        // Tâches principales (simplifiées pour le PDF)
-        pdf.setFontSize(12);
-        pdf.setTextColor(44, 62, 80);
-        pdf.text('Tâches principales:', 15, yPos);
-        yPos += 7;
-
-        pdf.setFontSize(11);
-        phase.tasks.forEach(task => {
-          if (yPos > 270) {
-            pdf.addPage();
-            yPos = 20;
-          }
-
-          let prioritySymbol = "⚪";
-          if (task.priority === 'high') prioritySymbol = "🔴";
-          else if (task.priority === 'medium') prioritySymbol = "🟠";
-          else prioritySymbol = "🟢";
-
-          pdf.text(`${prioritySymbol} ${task.name} (${task.estimated_hours}h)`, 20, yPos);
-          yPos += 6;
         });
 
         yPos += 10;
       });
+
+      // Structure du projet
+      let currentPhase = 0;
+      const totalPhases = result.project_structure.phases.length;
+
+      const renderPhase = (phase: any, phaseIndex: number) => {
+        if (yPos > 250) {
+          pdf.addPage();
+          addPageHeader('Structure du projet');
+          yPos = 30;
+        }
+
+        // Titre de la phase
+        pdf.setFontSize(14);
+        pdf.setTextColor(41, 128, 185);
+        const phaseTitle = `Phase ${phaseIndex + 1}: ${phase.name}`;
+        const phaseTitleHeight = addWrappedText(phaseTitle, 20, yPos, width - 40, 14);
+        yPos += 10 + phaseTitleHeight;
+
+        // Objectifs
+        pdf.setFontSize(12);
+        pdf.setTextColor(44, 62, 80);
+        pdf.text('Objectifs:', 25, yPos);
+        yPos += 7;
+
+        pdf.setFontSize(11);
+        for (const obj of phase.objectives) {
+          if (yPos > 250) {
+            pdf.addPage();
+            addPageHeader('Structure du projet');
+            yPos = 30;
+          }
+          const objHeight = addWrappedText(`• ${obj}`, 30, yPos, width - 60, 11);
+          yPos += 6 + objHeight;
+        }
+
+        yPos += 5;
+
+        // Livrables
+        if (yPos > 240) {
+          pdf.addPage();
+          addPageHeader('Structure du projet');
+          yPos = 30;
+        }
+        pdf.setFontSize(12);
+        pdf.text('Livrables:', 25, yPos);
+        yPos += 7;
+
+        pdf.setFontSize(11);
+        for (const deliv of phase.deliverables) {
+          if (yPos > 250) {
+            pdf.addPage();
+            addPageHeader('Structure du projet');
+            yPos = 30;
+          }
+          const delivHeight = addWrappedText(`• ${deliv}`, 30, yPos, width - 60, 11);
+          yPos += 6 + delivHeight;
+        }
+
+        yPos += 5;
+
+        // Tâches
+        if (yPos > 240) {
+          pdf.addPage();
+          addPageHeader('Structure du projet');
+          yPos = 30;
+        }
+        pdf.setFontSize(12);
+        pdf.text('Tâches principales:', 25, yPos);
+        yPos += 7;
+
+        pdf.setFontSize(11);
+        for (const task of phase.tasks) {
+          if (yPos > 250) {
+            pdf.addPage();
+            addPageHeader('Structure du projet');
+            yPos = 30;
+          }
+
+          let prioritySymbol = "•";
+          if (task.priority === 'high') prioritySymbol = "!";
+          else if (task.priority === 'medium') prioritySymbol = "+";
+          else prioritySymbol = "-";
+
+          const taskText = `${prioritySymbol} ${task.name} (${task.estimated_hours}h)`;
+          const taskHeight = addWrappedText(taskText, 30, yPos, width - 60, 11);
+          yPos += 6 + taskHeight;
+        }
+
+        yPos += 15;
+
+        // Si ce n'est pas la dernière phase, vérifier si on a besoin d'une nouvelle page
+        if (phaseIndex < totalPhases - 1 && yPos > 240) {
+          pdf.addPage();
+          addPageHeader('Structure du projet');
+          yPos = 30;
+        }
+      };
+
+      // Rendre toutes les phases
+      result.project_structure.phases.forEach((phase, index) => {
+        renderPhase(phase, index);
+      });
+
+      // Vérifier si on est à la fin d'une page avant de sauvegarder
+      if (yPos > 250) {
+        pdf.addPage();
+        addPageHeader('Structure du projet');
+      }
 
       // Sauvegarder le PDF
       pdf.save(`${fileName}.pdf`);

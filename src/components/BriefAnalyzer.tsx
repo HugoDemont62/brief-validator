@@ -100,7 +100,7 @@ const BriefAnalyzer: React.FC<BriefAnalyzerProps> = ({ apiKey }) => {
 
       {isLoading && (
         <div className="my-8 py-12 flex justify-center">
-          <LoadingSpinner size="large" text="Analyse du brief en cours..." />
+          <LoadingSpinner size="large" />
         </div>
       )}
 

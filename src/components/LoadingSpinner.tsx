@@ -1,16 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface LoadingSpinnerProps {
   size?: 'small' | 'medium' | 'large';
   color?: string;
-  text?: string;
 }
+
+const texts = [
+  "Analyse du brief en cours...",
+  "Veuillez patienter, analyse en cours...",
+  "Nous préparons l'analyse de votre brief...",
+  "Analyse détaillée en cours...",
+  "Traitement du brief en cours..."
+];
+
+const getRandomText = () => {
+  const randomIndex = Math.floor(Math.random() * texts.length);
+  return texts[randomIndex];
+};
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
                                                          size = 'medium',
-                                                         color = 'currentColor',
-                                                         text = 'Chargement...'
+                                                         color = 'currentColor'
                                                        }) => {
+  const [randomText, setRandomText] = useState('');
+
+  useEffect(() => {
+    setRandomText(getRandomText());
+    const interval = setInterval(() => {
+      setRandomText(getRandomText());
+    }, 3000); // Change text every 3 seconds
+
+    return () => clearInterval(interval); // Cleanup interval on component unmount
+  }, []);
+
   const sizeMap = {
     small: 'h-4 w-4',
     medium: 'h-8 w-8',
@@ -39,7 +61,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         ></path>
       </svg>
-      {text && <span className="mt-2 text-sm text-gray-600">{text}</span>}
+      <span className="mt-2 text-sm text-gray-600">{randomText}</span>
     </div>
   );
 };

@@ -44,7 +44,6 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
             ))}
           </div>
 
-          {/* Ajoutez le bouton d'exportation PDF ici */}
           <PdfExportButton result={result} />
         </div>
       </div>
@@ -54,7 +53,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold mb-3">Forces</h3>
-              <ul className="list-disc pl-5 space-y-1">
+              <ul className="list-none pl-0 space-y-1">
                 {result.analysis.strengths.map((strength, index) => (
                   <li key={index} className="text-gray-700">{strength}</li>
                 ))}
@@ -63,7 +62,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
 
             <div>
               <h3 className="text-lg font-semibold mb-3">Faiblesses</h3>
-              <ul className="list-disc pl-5 space-y-1">
+              <ul className="list-none pl-0 space-y-1">
                 {result.analysis.weaknesses.map((weakness, index) => (
                   <li key={index} className="text-gray-700">{weakness}</li>
                 ))}
@@ -72,7 +71,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
 
             <div>
               <h3 className="text-lg font-semibold mb-3">Informations manquantes</h3>
-              <ul className="list-disc pl-5 space-y-1">
+              <ul className="list-none pl-0 space-y-1">
                 {result.analysis.missing_information.map((info, index) => (
                   <li key={index} className="text-gray-700">{info}</li>
                 ))}
@@ -84,7 +83,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                 <div className="text-center">
                   <h4 className="font-semibold text-gray-700">Score de cohérence</h4>
                   <div className="text-3xl font-bold text-blue-600 mt-2">
-                    {(result.analysis.coherence_score * 10).toFixed(1)}/10
+                    {Math.floor(result.analysis.coherence_score)}/10
                   </div>
                 </div>
               </div>
@@ -93,7 +92,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                 <div className="text-center">
                   <h4 className="font-semibold text-gray-700">Score de complétude</h4>
                   <div className="text-3xl font-bold text-blue-600 mt-2">
-                    {(result.analysis.completeness_score * 10).toFixed(1)}/10
+                    {Math.floor(result.analysis.completeness_score)}/10
                   </div>
                 </div>
               </div>
@@ -142,7 +141,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <h5 className="font-medium text-sm mb-2">Avantages</h5>
-                        <ul className="list-disc pl-5 text-sm space-y-1">
+                        <ul className="list-none pl-0 text-sm space-y-1">
                           {approach.benefits.map((benefit, bIndex) => (
                             <li key={bIndex} className="text-gray-700">{benefit}</li>
                           ))}
@@ -151,7 +150,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
 
                       <div>
                         <h5 className="font-medium text-sm mb-2">Considérations</h5>
-                        <ul className="list-disc pl-5 text-sm space-y-1">
+                        <ul className="list-none pl-0 text-sm space-y-1">
                           {approach.considerations.map((consideration, cIndex) => (
                             <li key={cIndex} className="text-gray-700">{consideration}</li>
                           ))}
@@ -175,7 +174,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <h5 className="font-medium text-sm mb-2">Avantages</h5>
-                        <ul className="list-disc pl-5 text-sm space-y-1">
+                        <ul className="list-none pl-0 text-sm space-y-1">
                           {approach.benefits.map((benefit, bIndex) => (
                             <li key={bIndex} className="text-gray-700">{benefit}</li>
                           ))}
@@ -184,7 +183,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
 
                       <div>
                         <h5 className="font-medium text-sm mb-2">Considérations</h5>
-                        <ul className="list-disc pl-5 text-sm space-y-1">
+                        <ul className="list-none pl-0 text-sm space-y-1">
                           {approach.considerations.map((consideration, cIndex) => (
                             <li key={cIndex} className="text-gray-700">{consideration}</li>
                           ))}
@@ -227,7 +226,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                     <div className="grid grid-cols-2 gap-6 mb-4">
                       <div>
                         <h5 className="font-medium text-sm mb-2">Objectifs</h5>
-                        <ul className="list-disc pl-5 text-sm space-y-1">
+                        <ul className="list-none pl-0 text-sm space-y-1">
                           {phase.objectives.map((objective, oIndex) => (
                             <li key={oIndex} className="text-gray-700">{objective}</li>
                           ))}
@@ -236,7 +235,7 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
 
                       <div>
                         <h5 className="font-medium text-sm mb-2">Livrables</h5>
-                        <ul className="list-disc pl-5 text-sm space-y-1">
+                        <ul className="list-none pl-0 text-sm space-y-1">
                           {phase.deliverables.map((deliverable, dIndex) => (
                             <li key={dIndex} className="text-gray-700">{deliverable}</li>
                           ))}

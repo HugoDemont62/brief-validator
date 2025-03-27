@@ -50,7 +50,7 @@ const BriefAnalyzer: React.FC<BriefAnalyzerProps> = ({ apiKey }) => {
             },
             {
               role: "user",
-              content: `Voici le brief client à analyser :\n\n${brief}\n\nVoici la structure de réponse attendue :\n\n${JSON.stringify(emptyResponseTemplate, null, 2)}`
+              content: `Voici le brief client à analyser :\n\n${brief}\n\nVoici la structure de réponse attendue en français :\n\n${JSON.stringify(emptyResponseTemplate, null, 2)}`
             }
           ],
           temperature: 0.7

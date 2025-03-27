@@ -42,7 +42,7 @@ const BriefAnalyzer: React.FC<BriefAnalyzerProps> = ({ apiKey }) => {
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "gpt-4",
+          model: "gpt-4o-mini",
           messages: [
             {
               role: "system",
@@ -67,8 +67,8 @@ const BriefAnalyzer: React.FC<BriefAnalyzerProps> = ({ apiKey }) => {
       const data = await response.json();
 
       try {
-        // Tenter d'extraire le JSON de la réponse
-        const contentString = data.choices[0].message.content;
+        // Nettoyer le contenu de la réponse en supprimant les balises de code Markdown
+        const contentString = data.choices[0].message.content.replace(/```json|```/g, '');
         const jsonResponse = JSON.parse(contentString);
         setAnalysisResult(jsonResponse);
       } catch (parseError) {

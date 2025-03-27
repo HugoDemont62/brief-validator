@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import jsPDF from 'jspdf';
 import { JsonResponse } from '../types';
-// @ts-ignore
 import Chart from 'chart.js/auto';
 
 interface PdfExportButtonProps {

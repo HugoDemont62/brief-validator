@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { JsonResponse } from '../types';
+import PdfExportButton from './PdfExportButton.tsx'
 
 interface AnalysisResultsProps {
   result: JsonResponse;
@@ -26,20 +27,25 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="border-b">
-        <div className="flex overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`px-6 py-3 font-medium text-sm focus:outline-none ${
-                activeTab === tab.id
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex justify-between items-center px-6 py-2">
+          <div className="flex overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={`px-6 py-3 font-medium text-sm focus:outline-none ${
+                  activeTab === tab.id
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Ajoutez le bouton d'exportation PDF ici */}
+          <PdfExportButton result={result} />
         </div>
       </div>
 

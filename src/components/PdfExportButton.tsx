@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import jsPDF from 'jspdf';
 import { JsonResponse } from '../types';
+// @ts-ignore
 import Chart from 'chart.js/auto';
 
 interface PdfExportButtonProps {
@@ -10,7 +11,6 @@ interface PdfExportButtonProps {
 
 const PdfExportButton: React.FC<PdfExportButtonProps> = ({ result, fileName = 'brief-analysis' }) => {
   const [isExporting, setIsExporting] = useState(false);
-  const chartRef = useRef<HTMLCanvasElement>(null);
 
   // Fonction utilitaire pour normaliser les scores
   const normalizeScore = (score: number): number => {
@@ -408,7 +408,6 @@ const PdfExportButton: React.FC<PdfExportButtonProps> = ({ result, fileName = 'b
       });
 
       // Structure du projet
-      let currentPhase = 0;
       const totalPhases = result.project_structure.phases.length;
 
       const renderPhase = (phase: any, phaseIndex: number) => {

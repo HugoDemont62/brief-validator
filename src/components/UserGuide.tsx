@@ -7,7 +7,7 @@ const UserGuide: React.FC = () => {
     <div className="mt-8 mb-12 border border-blue-100 rounded-lg bg-blue-50 p-4">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex justify-between items-center text-blue-700 font-medium focus:outline-none"
+        className="w-full text-left text-blue-700 font-medium focus:outline-none flex"
       >
         <span className="flex items-center">
           <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -25,7 +25,7 @@ const UserGuide: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="mt-4 text-gray-700 text-sm">
+        <div className="mt-4 text-gray-700 text-sm text-left">
           <h3 className="font-medium text-blue-800 mb-2">Comment utiliser Brief Validator ?</h3>
 
           <ol className="list-decimal ml-5 space-y-3">

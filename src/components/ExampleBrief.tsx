@@ -78,7 +78,7 @@ Délai: 4 mois`;
               Utiliser cet exemple
             </button>
           </div>
-          <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono bg-white p-3 rounded border border-gray-200 max-h-60 overflow-y-auto">
+          <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono bg-white p-3 rounded border border-gray-200 max-h-60 overflow-y-auto text-left">
             {example}
           </pre>
         </div>

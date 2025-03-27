@@ -1,54 +1,97 @@
-# React + TypeScript + Vite
+# Brief Validator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Une application web qui vous permet d'analyser des briefs clients à l'aide de l'IA (GPT-4) pour obtenir une analyse détaillée, des questions de clarification, des approches alternatives et une structure de projet.
 
-Currently, two official plugins are available:
+## Fonctionnalités
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Analyse détaillée des forces et faiblesses du brief
+- Identification des informations manquantes
+- Questions de clarification classées par importance et catégorie
+- Proposition d'approches fonctionnelles et techniques alternatives
+- Structure de projet avec phases, objectifs, livrables et tâches
+- Exportation des résultats au format JSON
+- Intégration avec l'API OpenAI GPT-4
 
-## Expanding the ESLint configuration
+## Prérequis
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Node.js (v18 ou supérieur)
+- Clé API OpenAI (avec accès à GPT-4)
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Installation
+
+1. **Cloner le dépôt**
+
+```
+git clone https://github.com/votreutilisateur/brief-validator.git
+cd brief-validator
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. **Installer les dépendances**
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
 ```
+npm install
+```
+
+3. **Configurer les variables d'environnement**
+
+Créez un fichier `.env` à la racine du projet et ajoutez votre clé API OpenAI :
+
+```
+VITE_OPENAI_API_KEY=votre_cle_api_openai_ici
+```
+
+Vous pouvez également configurer la clé API directement dans l'interface de l'application.
+
+4. **Lancer l'application en mode développement**
+
+```
+npm run dev
+```
+
+L'application sera disponible à l'adresse [http://localhost:5173](http://localhost:5173).
+
+## Structure du projet
+
+```
+brief-validator/
+├── public/            # Ressources statiques
+├── src/               # Code source
+│   ├── components/    # Composants React
+│   ├── types.ts       # Types TypeScript
+│   ├── App.tsx        # Composant principal
+│   ├── main.tsx       # Point d'entrée
+│   └── ...
+├── .env               # Variables d'environnement (à créer)
+├── .env.example       # Exemple de variables d'environnement
+├── index.html         # Page HTML principale
+├── package.json       # Dépendances et scripts
+├── tsconfig.json      # Configuration TypeScript
+└── vite.config.ts     # Configuration Vite
+```
+
+## Technologies utilisées
+
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- API OpenAI GPT-4
+
+## Déploiement
+
+Pour construire l'application pour la production :
+
+```
+npm run build
+```
+
+Les fichiers générés seront disponibles dans le répertoire `dist/`.
+
+## Sécurité
+
+- Les clés API sont stockées localement dans le navigateur et ne sont jamais envoyées à un serveur autre que l'API OpenAI.
+- Aucune donnée n'est collectée ou stockée en dehors de votre navigateur.
+
+## Licence
+
+MIT
